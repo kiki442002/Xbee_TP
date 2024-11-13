@@ -16,11 +16,12 @@ uint8_t SendATMult(char **argv, int argc)
         if (res != AT_OK)
             return res;
     }
+    // Save configuration
     Xbee.write("ATAC\r", 5);
     res = Wait_AT_Command();
     if (res != AT_OK)
         return res;
-
+    // Exit AT mode
     Xbee.write("ATCN\r", 5);
     res = Wait_AT_Command();
     if (res != AT_OK)
@@ -31,7 +32,7 @@ uint8_t SendATMult(char **argv, int argc)
 
 uint8_t SendAT(char *at)
 {
-    uint8_t res;
+    int8_t res;
 
     Xbee.write("+++", 3);
     if (Wait_AT_Command() != AT_OK)
@@ -39,13 +40,17 @@ uint8_t SendAT(char *at)
 
     Xbee.write(at, strlen(at));
     res = Wait_AT_Command();
+    if (res != AT_OK)
+        return res;
+
     return res;
 
+    // Save configuration
     Xbee.write("ATAC\r", 5);
     res = Wait_AT_Command();
     if (res != AT_OK)
         return res;
-
+    // Exit AT mode
     Xbee.write("ATCN\r", 5);
     res = Wait_AT_Command();
     if (res != AT_OK)

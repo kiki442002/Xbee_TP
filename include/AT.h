@@ -5,5 +5,5 @@
 #define TIMOUT_AT 10000 // 10s
 
 uint8_t SendATMult(char **argv, int argc);
-uint8_t SendAT(char *at);
+uint8_t SendA(char *at);
 uint8_t Wait_AT_Command();
