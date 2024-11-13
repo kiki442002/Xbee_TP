@@ -1,5 +1,5 @@
 #include <Arduino.h>
 #include <string.h>
+#include <SoftwareSerial.h>
 
-#define ERROR_TIMEOUT false
-#define NO_TIMEOUT true
+extern SoftwareSerial Xbee;
