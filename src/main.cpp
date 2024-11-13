@@ -8,6 +8,7 @@ void setup()
 {
   Serial.begin(9600);
   Xbee.begin(9600);
+
   if (SendATMult((char **)config, 2) != AT_OK)
     Serial.println("Error");
   else
