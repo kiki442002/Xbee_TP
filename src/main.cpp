@@ -3,18 +3,18 @@
 #include "queue.h"
 
 #define N_CONFIG 4
+#define TIMEOUT_SEND 5000
 
 char *config[N_CONFIG] = {"ATMY 1\r", "ATID 1234\r", "ATCH C\r", "ATDL 2\r"};
 
-int pot_device[1] = {MY_REL};
-int temp_device[2] = {MY_LCP, MY_REL};
-int error_device[1] = {MY_LCP};
-int alerte_device[1] = {MY_LCP};
+long time_last_send = 0;
+bool send_msg = true;
 
-String cmd_to_relay = "";
+String cmd_to_relay = " ";
 
 SoftwareSerial Xbee(RX, TX);
 PriorityQueue msgQueue;
+QueueElement msgSent;
 
 void setup()
 {
@@ -25,14 +25,17 @@ void setup()
     Serial.println("Error");
   else
     Serial.println("Conf OK");
+
+  Xbee.println("Test");
 }
 
 void loop()
 {
   if (Xbee.available())
   {
-    // cmd_to_relay = Xbee.readString();
-    Serial.println(Xbee.readString());
+    cmd_to_relay = Xbee.readString();
+    Serial.print("Received: ");
+    Serial.println(cmd_to_relay);
   }
 
   if ((cmd_to_relay[0] & 0x20))
@@ -40,51 +43,70 @@ void loop()
     switch (cmd_to_relay[0])
     {
     case MOT_ACK:
-      /* code */
+      if (msgSent.ack_to_receive == MOT_ACK)
+        send_msg = true;
       break;
     case SERV_ACK:
-      /* code */
+      if (msgSent.ack_to_receive == SERV_ACK)
+        send_msg = true;
       break;
     case LCD_ACK:
-      /* code */
+      if (msgSent.ack_to_receive == LCD_ACK)
+        send_msg = true;
       break;
     case RELAY_ACK:
-      /* code */
+      if (msgSent.ack_to_receive == RELAY_ACK)
+        send_msg = true;
+      break;
+
+    case ' ':
       break;
 
     default:
-      // Serial.println("ACK not recognized");
+      Serial.println("ACK not recognized");
       break;
     }
   }
   else
   {
+    char ack[3] = {HUB_ACK, '\r', '\0'};
     switch (cmd_to_relay[0])
     {
+
     case TEMP_CMD:
-      msgQueue.enqueue(cmd_to_relay, MY_REL, 1);
-      msgQueue.enqueue(cmd_to_relay, MY_LCP, 1);
+      SendMsg(ack, MY_TMP);
+      msgQueue.enqueue(cmd_to_relay, MY_REL, RELAY_ACK, 1);
+      msgQueue.enqueue(cmd_to_relay, MY_LCP, LCD_ACK, 1);
       break;
     case ERROR_CMD:
-      msgQueue.enqueue(cmd_to_relay, MY_LCP, 2);
+      SendMsg(ack, MY_REL);
+      msgQueue.enqueue(cmd_to_relay, MY_LCP, LCD_ACK, 2);
       break;
     case POT_CMD:
-      msgQueue.enqueue(cmd_to_relay, MY_REL, 1);
+      SendMsg(ack, MY_LCP);
+      msgQueue.enqueue(cmd_to_relay, MY_REL, RELAY_ACK, 1);
       break;
     case ALERTE_CMD:
-      msgQueue.enqueue(cmd_to_relay, MY_LCP, 3);
+      SendMsg(ack, MY_LCP);
+      msgQueue.enqueue(cmd_to_relay, MY_LCP, LCD_ACK, 3);
       break;
 
     default:
-      // Serial.println("CMD not recognized");
+      Serial.println("CMD not recognized");
       break;
     }
   }
 
-  String msg_to_send;
-  int dl_to_send;
-  if (msgQueue.dequeue(msg_to_send, dl_to_send) != 0)
+  if ((millis() - time_last_send > TIMEOUT_SEND) && !send_msg)
   {
-    SendMsg((char *)msg_to_send.c_str(), dl_to_send);
+    send_msg = true;
+    msgQueue.enqueue(msgSent.msg, msgSent.dl, msgSent.ack_to_receive, msgSent.priority);
+  }
+
+  if (!msgQueue.isEmpty() && send_msg)
+  {
+    msgQueue.dequeue(msgSent);
+    time_last_send = millis();
+    SendMsg((char *)msgSent.msg.c_str(), msgSent.dl);
   }
 }
