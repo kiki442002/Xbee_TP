@@ -1,6 +1,8 @@
 #include "main.h"
 #include "AT.h"
 
+int current_dl = 2;
+
 uint8_t SendATMult(char **argv, int argc)
 {
     uint8_t res;
@@ -57,10 +59,26 @@ uint8_t SendAT(char *at)
         return res;
 }
 
+uint8_t SendMsg(char *msg, int dl)
+{
+    char conf[5];
+    uint8_t res = AT_OK;
+
+    if (dl != current_dl)
+    {
+        sprintf(conf, "ATDL %d\r", dl);
+        if (SendAT(conf) != AT_OK)
+            return AT_ERROR;
+        current_dl = dl;
+    }
+
+    Xbee.print(msg);
+}
+
 uint8_t Wait_AT_Command()
 {
     long start = millis();
-    while (!Xbee.available() && millis() - start < 10000)
+    while (!Xbee.available() && millis() - start < TIMEOUT_AT)
         ;
     if (millis() - start >= 10000)
         return AT_TIMEOUT;
