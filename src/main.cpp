@@ -100,7 +100,7 @@ void loop()
   if ((millis() - time_last_send > TIMEOUT_SEND) && !send_msg)
   {
     send_msg = true;
-    msgQueue.enqueue(msgSent.msg, msgSent.dl, msgSent.ack_to_receive, msgSent.priority);
+    msgQueue.enqueue(msgSent.msg, msgSent.dl, msgSent.ack_to_receive, 1);
   }
 
   if (!msgQueue.isEmpty() && send_msg)
