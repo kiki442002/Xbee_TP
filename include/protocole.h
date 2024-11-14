@@ -14,8 +14,3 @@
 #define MY_LCP 3
 #define MY_TMP 4
 #define MY_MOT 5
-
-extern int pot_device[1];
-extern int temp_device[2];
-extern int error_device[1];
-extern int alerte_device[1];

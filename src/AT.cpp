@@ -2,11 +2,16 @@
 #include "AT.h"
 
 int current_dl = 2;
+long last_time_send = -11000;
 
 uint8_t SendATMult(char **argv, int argc)
 {
     uint8_t res;
+    long del = (1100 - ((millis() - last_time_send)));
+    if (del > 0)
+        delay(del);
 
+    delay(1100);
     Xbee.write("+++", 3);
     if (Wait_AT_Command() != AT_OK)
         return res;
@@ -19,7 +24,7 @@ uint8_t SendATMult(char **argv, int argc)
             return res;
     }
     // Save configuration
-    Xbee.write("ATAC\r", 5);
+    Xbee.write("ATWR\r", 5);
     res = Wait_AT_Command();
     if (res != AT_OK)
         return res;
@@ -30,23 +35,23 @@ uint8_t SendATMult(char **argv, int argc)
         return res;
 
     return res;
+    last_time_send = millis();
 }
 
 uint8_t SendAT(char *at)
 {
     int8_t res;
+    long del = (1200 - ((millis() - last_time_send)));
+    if (del > 0)
+        delay(del);
 
     Xbee.write("+++", 3);
     if (Wait_AT_Command() != AT_OK)
         return res;
-
     Xbee.write(at, strlen(at));
     res = Wait_AT_Command();
     if (res != AT_OK)
         return res;
-
-    return res;
-
     // Save configuration
     Xbee.write("ATAC\r", 5);
     res = Wait_AT_Command();
@@ -57,12 +62,13 @@ uint8_t SendAT(char *at)
     res = Wait_AT_Command();
     if (res != AT_OK)
         return res;
+    return res;
+    last_time_send = millis();
 }
 
 uint8_t SendMsg(char *msg, int dl)
 {
     char conf[5];
-    uint8_t res = AT_OK;
 
     if (dl != current_dl)
     {
@@ -72,7 +78,9 @@ uint8_t SendMsg(char *msg, int dl)
         current_dl = dl;
     }
 
-    Xbee.print(msg);
+    Xbee.println(msg);
+    last_time_send = millis();
+    return AT_OK;
 }
 
 uint8_t Wait_AT_Command()
